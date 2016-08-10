@@ -8,7 +8,7 @@
 
 import Foundation
 
-protocol ActionCreator {
+public protocol ActionCreator {
     
     associatedtype State
     
