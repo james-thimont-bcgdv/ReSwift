@@ -93,6 +93,7 @@
 		81BCBECF1C63167A00AA4F03 /* Subscription.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81BCBECD1C63167A00AA4F03 /* Subscription.swift */; };
 		81BCBED01C63167A00AA4F03 /* Subscription.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81BCBECD1C63167A00AA4F03 /* Subscription.swift */; };
 		81BCBED11C63167A00AA4F03 /* Subscription.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81BCBECD1C63167A00AA4F03 /* Subscription.swift */; };
+		FCA957901D5B541B00D70AAD /* ActionCreator.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCA9578F1D5B541B00D70AAD /* ActionCreator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -153,6 +154,7 @@
 		73F39F331D3EE3C300DFFE62 /* StoreDispatchTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StoreDispatchTests.swift; sourceTree = "<group>"; };
 		73F39F371D3EE46A00DFFE62 /* StoreSubscriptionTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StoreSubscriptionTests.swift; sourceTree = "<group>"; };
 		81BCBECD1C63167A00AA4F03 /* Subscription.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Subscription.swift; sourceTree = "<group>"; };
+		FCA9578F1D5B541B00D70AAD /* ActionCreator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ActionCreator.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -286,6 +288,7 @@
 				625E66BB1C1FFC880027C288 /* StoreSubscriber.swift */,
 				252982ED1C4FD21400281098 /* StoreType.swift */,
 				81BCBECD1C63167A00AA4F03 /* Subscription.swift */,
+				FCA9578F1D5B541B00D70AAD /* ActionCreator.swift */,
 			);
 			path = CoreTypes;
 			sourceTree = "<group>";
@@ -697,6 +700,7 @@
 				625E66BD1C1FFC880027C288 /* Store.swift in Sources */,
 				625E66B31C1FFC830027C288 /* Coding.swift in Sources */,
 				625E66BC1C1FFC880027C288 /* Action.swift in Sources */,
+				FCA957901D5B541B00D70AAD /* ActionCreator.swift in Sources */,
 				259737FD1C2C661100869B8F /* Middleware.swift in Sources */,
 				252982EE1C4FD21400281098 /* StoreType.swift in Sources */,
 				73E545D51D22BC3900D114E8 /* Assertions.swift in Sources */,
