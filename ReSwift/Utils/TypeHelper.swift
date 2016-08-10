@@ -39,10 +39,10 @@ func withSpecificTypes<SpecificStateType, Action>(
 func withSpecificTypes<SpecificStateType, Action>(
         action: Action,
         state genericStateType: StateType?,
-        @noescape function: (action: Action, state: SpecificStateType?) -> SpecificStateType
+        @noescape function: (action: Action, state: SpecificStateType) -> SpecificStateType
     ) -> StateType {
         guard let genericStateType = genericStateType else {
-            return function(action: action, state: nil) as! StateType
+            fatalError("state cannot be nil")
         }
 
         guard let specificStateType = genericStateType as? SpecificStateType else {

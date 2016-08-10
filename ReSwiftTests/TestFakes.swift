@@ -9,7 +9,7 @@
 import Foundation
 import ReSwift
 
-struct TestAppState: StateType {
+public struct TestAppState: StateType {
     var testValue: Int?
 
     init() {
@@ -65,33 +65,25 @@ struct SetValueStringAction: StandardActionConvertible {
 
 }
 
-struct TestReducer: Reducer {
-    func handleAction(action: Action, state: TestAppState?) -> TestAppState {
-        var state = state ?? TestAppState()
-
-        switch action {
-        case let action as SetValueAction:
-            state.testValue = action.value
-            return state
-        default:
-            return state
-        }
+public struct TestReducer: Reducer {
+    
+    public typealias  ReducerStateType = TestAppState
+    
+    public func handleAction(action: Action, state: ReducerStateType) -> ReducerStateType {
+                var state = state ?? TestAppState()
+        
+                switch action {
+                case let action as SetValueAction:
+                    state.testValue = action.value
+                    return state
+                default:
+                    return state
+                }
     }
+    
 }
 
-struct TestValueStringReducer: Reducer {
-    func handleAction(action: Action, state: TestStringAppState?) -> TestStringAppState {
-        var state = state ?? TestStringAppState()
 
-        switch action {
-        case let action as SetValueStringAction:
-            state.testValue = action.value
-            return state
-        default:
-            return state
-        }
-    }
-}
 
 class TestStoreSubscriber<T>: StoreSubscriber {
     var receivedStates: [T] = []

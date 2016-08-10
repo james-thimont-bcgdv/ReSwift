@@ -15,231 +15,118 @@ import Foundation
  reducers you can combine them by initializng a `MainReducer` with all of your reducers as an
  argument.
  */
+
+
+
 public class Store<State: StateType>: StoreType {
-
+    
     typealias SubscriptionType = Subscription<State>
+    
+    let notifyQueue = dispatch_queue_create("com.reswift.store.notify", DISPATCH_QUEUE_SERIAL)
+    let concurrencyQueue = dispatch_queue_create("com.reswift.store.concurrency", DISPATCH_QUEUE_CONCURRENT)
+    
+    private var _state: State
+    
+    public var state: State {
+        var state: State!
+        dispatch_sync(concurrencyQueue) {
+            state = self._state
+        }
+        return state
+    }
+    
+    private func notifySubscribers(subscribers: [SubscriptionType], newState: State, completion:(() -> Void)? = nil) {
 
-    // swiftlint:disable todo
-    // TODO: Setter should not be public; need way for store enhancers to modify appState anyway
-
-    /*private (set)*/ public var state: State! {
-        didSet {
-            subscriptions = subscriptions.filter { $0.subscriber != nil }
-            subscriptions.forEach {
+        dispatch_async(notifyQueue) {
+            
+            subscribers.forEach {
                 // if a selector is available, subselect the relevant state
                 // otherwise pass the entire state to the subscriber
-                #if swift(>=3)
-                    $0.subscriber?._newState(state: $0.selector?(state) ?? state)
-                #else
-                    $0.subscriber?._newState($0.selector?(state) ?? state)
-                #endif
+                $0.subscriber?._newState($0.selector?(newState) ?? newState)
             }
+            completion?()
         }
+        
     }
-
-    public var dispatchFunction: DispatchFunction!
-
+    
+    
     private var reducer: AnyReducer
-
-    var subscriptions: [SubscriptionType] = []
-
+    private var _subscriptions: [SubscriptionType] = []
+    var subscriptions: [SubscriptionType] {
+        var s:[SubscriptionType]!
+        dispatch_sync(concurrencyQueue) { 
+            s = self._subscriptions
+        }
+        return s
+    }
     private var isDispatching = false
-
-    public required convenience init(reducer: AnyReducer, state: State?) {
-        self.init(reducer: reducer, state: state, middleware: [])
-    }
-
-    public required init(reducer: AnyReducer, state: State?, middleware: [Middleware]) {
+    
+    
+    public required init(reducer: AnyReducer, initialState: State) {
+        
+        self._state = initialState
         self.reducer = reducer
-
-        // Wrap the dispatch function with all middlewares
-        self.dispatchFunction = middleware
-            .reversed()
-            .reduce({ [unowned self] action in
-                #if swift(>=3)
-                    return self._defaultDispatch(action: action)
-                #else
-                    return self._defaultDispatch(action)
-                #endif
-            }) {
-                [weak self] dispatchFunction, middleware in
-                let getState = { self?.state }
-                return middleware(self?.dispatch, getState)(dispatchFunction)
-        }
-
-        if let state = state {
-            self.state = state
-        } else {
-            dispatch(ReSwiftInit())
-        }
+        dispatch_set_target_queue(notifyQueue, dispatch_get_main_queue())
     }
-
+    
     private func _isNewSubscriber(subscriber: AnyStoreSubscriber) -> Bool {
-        #if swift(>=3)
-            let contains = subscriptions.contains(where: { $0.subscriber === subscriber })
-        #else
-            let contains = subscriptions.contains({ $0.subscriber === subscriber })
-        #endif
-
+        
+        let contains = _subscriptions.contains({ $0.subscriber === subscriber })
+        
         if contains {
             print("Store subscriber is already added, ignoring.")
             return false
         }
-
+        
         return true
     }
-
-    #if swift(>=3)
-    public func subscribe<S: StoreSubscriber
-        where S.StoreSubscriberStateType == State>(_ subscriber: S) {
-            subscribe(subscriber, selector: nil)
-    }
-    #else
+    
     public func subscribe<S: StoreSubscriber
         where S.StoreSubscriberStateType == State>(subscriber: S) {
-            subscribe(subscriber, selector: nil)
+        self.subscribe(subscriber, selector: nil)
+        
     }
-    #endif
-
-    #if swift(>=3)
-    public func subscribe<SelectedState, S: StoreSubscriber
-        where S.StoreSubscriberStateType == SelectedState>
-        (_ subscriber: S, selector: ((State) -> SelectedState)?) {
-            if !_isNewSubscriber(subscriber: subscriber) { return }
-
-            subscriptions.append(Subscription(subscriber: subscriber, selector: selector))
-
-            if let state = self.state {
-                subscriber._newState(state: selector?(state) ?? state)
-            }
-    }
-    #else
     public func subscribe<SelectedState, S: StoreSubscriber
         where S.StoreSubscriberStateType == SelectedState>
         (subscriber: S, selector: ((State) -> SelectedState)?) {
-            if !_isNewSubscriber(subscriber) { return }
+        
+        dispatch_barrier_async(self.concurrencyQueue) {
+            let state = self._state
+            guard self._isNewSubscriber(subscriber) else { return }
+            let subscription  = Subscription(subscriber: subscriber, selector: selector)
+            self._subscriptions.append(subscription)
+            
+            self.notifySubscribers([subscription], newState: state)
 
-            subscriptions.append(Subscription(subscriber: subscriber, selector: selector))
-
-            if let state = self.state {
-                subscriber._newState(selector?(state) ?? state)
-            }
-    }
-    #endif
-
-    #if swift(>=3)
-    public func unsubscribe(_ subscriber: AnyStoreSubscriber) {
-        if let index = subscriptions.index(where: { return $0.subscriber === subscriber }) {
-            subscriptions.remove(at: index)
         }
+        
+        
+        
     }
-    #else
+    
     public func unsubscribe(subscriber: AnyStoreSubscriber) {
-        if let index = subscriptions.indexOf({ return $0.subscriber === subscriber }) {
-            subscriptions.removeAtIndex(index)
-        }
-    }
-    #endif
-
-    public func _defaultDispatch(action: Action) -> Any {
-        guard !isDispatching else {
-            raiseFatalError(
-                "ReSwift:IllegalDispatchFromReducer - Reducers may not dispatch actions.")
-        }
-
-        isDispatching = true
-        #if swift(>=3)
-            let newState = reducer._handleAction(action: action, state: state) as! State
-        #else
-            let newState = reducer._handleAction(action, state: state) as! State
-        #endif
-        isDispatching = false
-
-        state = newState
-
-        return action
-    }
-
-    #if swift(>=3)
-    @discardableResult
-    public func dispatch(_ action: Action) -> Any {
-        let returnValue = dispatchFunction(action)
-
-        return returnValue
-    }
-    #else
-    public func dispatch(action: Action) -> Any {
-        let returnValue = dispatchFunction(action)
-
-        return returnValue
-    }
-    #endif
-
-    #if swift(>=3)
-    @discardableResult
-    public func dispatch(_ actionCreatorProvider: ActionCreator) -> Any {
-        let action = actionCreatorProvider(state: state, store: self)
-
-        if let action = action {
-            dispatch(action)
-        }
-
-        return action
-    }
-    #else
-    public func dispatch(actionCreatorProvider: ActionCreator) -> Any {
-        let action = actionCreatorProvider(state: state, store: self)
-
-        if let action = action {
-            dispatch(action)
-        }
-
-        return action
-    }
-    #endif
-
-    #if swift(>=3)
-    public func dispatch(_ asyncActionCreatorProvider: AsyncActionCreator) {
-        dispatch(asyncActionCreatorProvider, callback: nil)
-    }
-    #else
-    public func dispatch(asyncActionCreatorProvider: AsyncActionCreator) {
-        dispatch(asyncActionCreatorProvider, callback: nil)
-    }
-    #endif
-
-    #if swift(>=3)
-    public func dispatch(_ actionCreatorProvider: AsyncActionCreator,
-                         callback: DispatchCallback?) {
-        actionCreatorProvider(state: state, store: self) { actionProvider in
-            let action = actionProvider(state: self.state, store: self)
-
-            if let action = action {
-                self.dispatch(action)
-                callback?(self.state)
+        dispatch_barrier_async(self.concurrencyQueue) {
+            
+            if let index = self._subscriptions.indexOf({ return $0.subscriber === subscriber }) {
+                self._subscriptions.removeAtIndex(index)
             }
         }
     }
-    #else
-    public func dispatch(actionCreatorProvider: AsyncActionCreator, callback: DispatchCallback?) {
-        actionCreatorProvider(state: state, store: self) { actionProvider in
-            let action = actionProvider(state: self.state, store: self)
-
-            if let action = action {
-                self.dispatch(action)
-                callback?(self.state)
-            }
+    
+    
+    public func dispatch(action: Action, completion:(() -> Void)? = nil){
+        
+        dispatch_barrier_async(concurrencyQueue) {
+            
+            let state = self._state
+            guard let newState = self.reducer._handleAction(action, state: state) as? State else { fatalError("reducer must return \(State.self) type") }
+            self._state = newState
+            let subscribers = self._subscriptions
+            self.notifySubscribers(subscribers, newState: newState, completion: completion)
+            
         }
+        
+        
     }
-    #endif
-
-    public typealias DispatchCallback = (State) -> Void
-
-    public typealias ActionCreator = (state: State, store: Store) -> Action?
-
-    public typealias AsyncActionCreator = (
-        state: State,
-        store: Store,
-        actionCreatorCallback: (ActionCreator) -> Void
-    ) -> Void
+    
 }

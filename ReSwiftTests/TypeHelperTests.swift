@@ -33,21 +33,6 @@ class TypeHelperTests: XCTestCase {
         XCTAssertTrue(called)
     }
 
-    /**
-     it calls the method if the source type is nil
-     */
-    func testCallsIfSourceTypeIsNil() {
-        var called = false
-        let reducerFunction: (Action, AppState1?) -> AppState1 = { action, state in
-            called = true
-
-            return state ?? AppState1()
-        }
-
-        withSpecificTypes(StandardAction(type: ""), state: nil, function: reducerFunction)
-
-        XCTAssertTrue(called)
-    }
 
     /**
      it doesn't call if source type can't be casted to function signature type
