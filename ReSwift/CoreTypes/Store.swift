@@ -18,7 +18,7 @@ import Foundation
 
 
 
-public class Store<State: StateType>: StoreType {
+public class Store<State: StateType>: StoreType, Dispatching {
     
     typealias SubscriptionType = Subscription<State>
     
@@ -129,4 +129,8 @@ public class Store<State: StateType>: StoreType {
         
     }
     
+}
+
+public protocol Dispatching {
+    func dispatch(action: Action, completion: (() -> Void)?)
 }
