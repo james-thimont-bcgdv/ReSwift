@@ -13,7 +13,7 @@ public protocol AnyStoreSubscriber: class {
 }
 
 public protocol StoreSubscriber: AnyStoreSubscriber {
-    associatedtype StoreSubscriberStateType
+    associatedtype StoreSubscriberStateType: StateType
 
     func newState(state: StoreSubscriberStateType)
 }

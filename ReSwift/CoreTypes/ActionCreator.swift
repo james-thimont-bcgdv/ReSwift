@@ -8,11 +8,23 @@
 
 import Foundation
 
+public protocol ActionParametersType {}
+
 public protocol ActionCreator {
     
-    associatedtype State
+    associatedtype State: StateType
+    associatedtype Parameters: ActionParametersType
+    /**
+     Generates one or more new actions from the current state.  May be implemented asynchronously or synchronously
+     - parameter actionBlock This may be called more than once with different actions
+     */
+    func createActions(parameters: Parameters, currentState state: State, actionBlock:(Action -> Void))
     
-    func execute(dispatcher: Dispatching, state: State)
+    /**
+     Prevents any further `actionBlocks` being executed.  Cancels the operation.
+     */
+    func cancel()
+    
 }
 
 

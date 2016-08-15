@@ -48,12 +48,15 @@ class StoreSubscriberTests: XCTestCase {
 //    }
 }
 
-class TestFilteredSubscriber: StoreSubscriber {
-    var receivedValue: Int?
+struct IntState: StateType {
+    let receivedValue: Int?
+}
 
-    func newState(state: Int?) {
-        receivedValue = state
-    }
+class TestFilteredSubscriber: StoreSubscriber {
+    var receivedValue: IntState?
+
+    func newState(state: IntState) {
+        receivedValue = state    }
 
 }
 
@@ -61,10 +64,15 @@ class TestFilteredSubscriber: StoreSubscriber {
  Example of how you can select a substate. The return value from
  `selectSubstate` and the argument for `newState` need to match up.
  */
-class TestSelectiveSubscriber: StoreSubscriber {
-    var receivedValue: (Int?, String?)
 
-    func newState(state: (Int?, String?)) {
+struct IntStringState: StateType {
+    let receivedValue: (Int?, String?)?
+}
+class TestSelectiveSubscriber: StoreSubscriber {
+    
+    var receivedValue: IntStringState?
+
+    func newState(state: IntStringState) {
         receivedValue = state
     }
 }

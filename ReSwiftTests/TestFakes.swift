@@ -85,7 +85,7 @@ public struct TestReducer: Reducer {
 
 
 
-class TestStoreSubscriber<T>: StoreSubscriber {
+class TestStoreSubscriber<T: StateType>: StoreSubscriber {
     var receivedStates: [T] = []
 
     func newState(state: T) {
@@ -109,7 +109,7 @@ class DispatchingSubscriber: StoreSubscriber {
     }
 }
 
-class CallbackStoreSubscriber<T>: StoreSubscriber {
+class CallbackStoreSubscriber<T: StateType>: StoreSubscriber {
 
     let handler: (T) -> Void
 

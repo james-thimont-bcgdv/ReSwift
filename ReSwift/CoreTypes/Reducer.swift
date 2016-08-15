@@ -13,7 +13,7 @@ public protocol AnyReducer {
 }
 
 public protocol Reducer: AnyReducer {
-    associatedtype ReducerStateType
+    associatedtype ReducerStateType: StateType
     
     func handleAction(action: Action, state: ReducerStateType) -> ReducerStateType
 }
