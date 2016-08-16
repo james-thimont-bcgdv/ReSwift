@@ -50,7 +50,10 @@ class StoreSubscriberTests: XCTestCase {
 
 struct IntState: StateType {
     let receivedValue: Int?
+    
 }
+
+
 
 class TestFilteredSubscriber: StoreSubscriber {
     var receivedValue: IntState?

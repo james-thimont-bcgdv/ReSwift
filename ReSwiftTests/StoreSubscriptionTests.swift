@@ -105,6 +105,61 @@ class StoreSubscriptionTests: XCTestCase {
         
         waitForExpectationsWithTimeout(1, handler: nil)
         
+        
+    }
+    
+    
+    
+    func testOnlyNotifiesSubscribersIfRelevantStatePropertyChanged() {
+        
+        store = Store(reducer: reducer, initialState: TestAppState(val: 5))
+        var subscriber = TestSubscriber()
+        
+        store.subscribe(subscriber){(s1: TestAppState, s2: TestAppState) in
+            
+            guard let val1 = s1.testValue, val2 = s2.testValue else { return true }
+            return val1 != val2
+            
+        }
+        
+        var expectation = expectationWithDescription("")
+        store.dispatch(SetValueAction(5))
+        
+        dispatch_async(dispatch_get_main_queue()) {
+            
+            XCTAssertEqual(subscriber.receivedStates.count, 1)
+            expectation.fulfill()
+            
+        }
+        
+        waitForExpectationsWithTimeout(1, handler: nil)
+
+        
+        store = Store(reducer: reducer, initialState: TestAppState(val: 5))
+        subscriber = TestSubscriber()
+        
+        store.subscribe(subscriber){(s1: TestAppState, s2: TestAppState) in
+            
+            guard let val1 = s1.testValue, val2 = s2.testValue else { return true }
+            return val1 != val2
+            
+        }
+        
+        expectation = expectationWithDescription("")
+        store.dispatch(SetValueAction(10))
+        
+        dispatch_async(dispatch_get_main_queue()) {
+            
+            XCTAssertEqual(subscriber.receivedStates.count, 2)
+            expectation.fulfill()
+            
+        }
+        
+        waitForExpectationsWithTimeout(1, handler: nil)
+
+        
+        
+        
     }
 
     /**
@@ -133,8 +188,8 @@ class StoreSubscriptionTests: XCTestCase {
         store = Store(reducer: reducer, initialState: TestAppState())
         let subscriber = TestSubscriber()
 
-        store.subscribe(subscriber) { $0 }
-        store.subscribe(subscriber) { $0 }
+        store.subscribe(subscriber) { s1, s2 in return true }
+        store.subscribe(subscriber) { s1, s2 in return true }
 
         let exp = expectationWithDescription("")
         dispatch_async(dispatch_get_main_queue()) {

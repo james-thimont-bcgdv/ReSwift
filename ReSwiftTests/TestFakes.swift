@@ -15,6 +15,10 @@ public struct TestAppState: StateType {
     init() {
         testValue = nil
     }
+    
+    init(val: Int?) {
+        testValue = val
+    }
 }
 
 struct TestStringAppState: StateType {
