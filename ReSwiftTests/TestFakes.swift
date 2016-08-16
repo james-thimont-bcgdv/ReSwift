@@ -15,6 +15,10 @@ public struct TestAppState: StateType {
     init() {
         testValue = nil
     }
+    
+    init(val: Int?) {
+        testValue = val
+    }
 }
 
 struct TestStringAppState: StateType {
@@ -79,6 +83,10 @@ public struct TestReducer: Reducer {
                 default:
                     return state
                 }
+    }
+    
+    public func initialState() -> ReducerStateType {
+        return TestAppState()
     }
     
 }

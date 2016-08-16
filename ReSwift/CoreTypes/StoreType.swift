@@ -18,16 +18,25 @@ public protocol StoreType {
 
     associatedtype State: StateType
 
-    init(reducer: AnyReducer, initialState: State)
+    init(reducer: AnyReducer)
     
     /// The current state stored in the store.
     var state: State { get }
 
+    
+ 
+}
+
+
+public protocol Subscribing {
+
+    associatedtype State: StateType
+    
     /**
      Subscribes the provided subscriber to this store.
      Subscribers will receive a call to `newState` whenever the
      state in this store changes.
-
+     
      - parameter subscriber: Subscriber that will receive store updates
      */
     #if swift(>=3)
@@ -35,11 +44,14 @@ public protocol StoreType {
     #else
     func subscribe<S: StoreSubscriber where S.StoreSubscriberStateType == State>(subscriber: S)
     #endif
-
+    
+    
+    func subscribe<S: StoreSubscriber where S.StoreSubscriberStateType == State>(subscriber: S, selector: ((State, State) -> Bool)?)
+    
     /**
      Unsubscribes the provided subscriber. The subscriber will no longer
      receive state updates from this store.
-
+     
      - parameter subscriber: Subscriber that will be unsubscribed
      */
     #if swift(>=3)
@@ -48,24 +60,5 @@ public protocol StoreType {
     func unsubscribe(subscriber: AnyStoreSubscriber)
     #endif
 
-    /**
-     Dispatches an action. This is the simplest way to modify the stores state.
-
-     Example of dispatching an action:
-
-     ```
-     store.dispatch( CounterAction.IncreaseCounter )
-     ```
-
-     - parameter action: The action that is being dispatched to the store
-     - returns: By default returns the dispatched action, but middlewares can change the
-     return type, e.g. to return promises
-     */
-    #if swift(>=3)
-    func dispatch(_ action: Action, completion:() -> Void)
-    #else
-    func dispatch(action: Action, completion:(() -> Void)?)
-    #endif
-
- 
+    
 }

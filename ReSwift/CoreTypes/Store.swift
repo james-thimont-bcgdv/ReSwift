@@ -18,33 +18,35 @@ import Foundation
 
 
 
-public class Store<State: StateType>: StoreType, Dispatching {
+final public class Store<State: StateType>: StoreType {
     
     typealias SubscriptionType = Subscription<State>
     
-    let notifyQueue = dispatch_queue_create("com.reswift.store.notify", DISPATCH_QUEUE_SERIAL)
-    let concurrencyQueue = dispatch_queue_create("com.reswift.store.concurrency", DISPATCH_QUEUE_CONCURRENT)
+    let concurrencyQueue = dispatch_queue_create("com.reswift.store.concurrency", DISPATCH_QUEUE_SERIAL)
     
     private var _state: State
     
     public var state: State {
         var state: State!
-        dispatch_sync(concurrencyQueue) {
+        dispatch_sync_on_main{
             state = self._state
         }
         return state
     }
     
-    private func notifySubscribers(subscribers: [SubscriptionType], newState: State, completion:(() -> Void)? = nil) {
+    private func notifySubscribers(subscribers: [SubscriptionType], oldState: State?, newState: State) {
 
-        dispatch_async(notifyQueue) {
+        dispatch_sync_on_main{
             
             subscribers.forEach {
                 // if a selector is available, subselect the relevant state
                 // otherwise pass the entire state to the subscriber
-                $0.subscriber?._newState($0.selector?(newState) ?? newState)
+                if oldState != nil && $0.selector != nil {
+                    let subscriberIsInterested = $0.selector!(old: oldState!, new: newState)
+                    guard subscriberIsInterested else { return }
+                }
+                $0.subscriber?._newState(newState)
             }
-            completion?()
         }
         
     }
@@ -52,24 +54,68 @@ public class Store<State: StateType>: StoreType, Dispatching {
     
     private var reducer: AnyReducer
     private var _subscriptions: [SubscriptionType] = []
-    var subscriptions: [SubscriptionType] {
+    internal var subscriptions: [SubscriptionType] {
         var s:[SubscriptionType]!
-        dispatch_sync(concurrencyQueue) { 
+        dispatch_sync_on_main {
             s = self._subscriptions
         }
         return s
     }
-    private var isDispatching = false
     
     
-    public required init(reducer: AnyReducer, initialState: State) {
+    public convenience init(reducer: AnyReducer) {
+        self.init(reducer: reducer, initialState: reducer._initialState() as! State)
+    }
+    
+    internal init(reducer: AnyReducer, initialState: State) {
         
         self._state = initialState
         self.reducer = reducer
-        dispatch_set_target_queue(notifyQueue, dispatch_get_main_queue())
+        dispatch_set_target_queue(concurrencyQueue, dispatch_get_main_queue())
     }
     
-    private func _isNewSubscriber(subscriber: AnyStoreSubscriber) -> Bool {
+    
+    
+    
+    private func dispatch_sync_on_main(block: dispatch_block_t) {
+        
+        if NSThread.isMainThread() {
+            block()
+            return
+        }
+        dispatch_sync(concurrencyQueue, block)
+        
+    }
+    
+}
+
+extension Store: Subscribing {
+
+    
+    public func subscribe<S: StoreSubscriber
+        where S.StoreSubscriberStateType == State>(subscriber: S) {
+        
+        subscribe(subscriber, selector: nil)
+        
+    }
+    public func subscribe<S: StoreSubscriber
+        where S.StoreSubscriberStateType == State>
+        (subscriber: S, selector: ((State, State) -> Bool)?) {
+        
+        dispatch_async(concurrencyQueue) {
+            
+            let state = self._state
+            guard self.isNewSubscriber(subscriber) else { return }
+            let subscription  = Subscription(subscriber: subscriber, selector: selector)
+            self._subscriptions.append(subscription)
+            
+            self.notifySubscribers([subscription], oldState: nil,newState: state)
+            
+        }
+        
+    }
+    
+    private func isNewSubscriber(subscriber: AnyStoreSubscriber) -> Bool {
         
         let contains = _subscriptions.contains({ $0.subscriber === subscriber })
         
@@ -80,57 +126,44 @@ public class Store<State: StateType>: StoreType, Dispatching {
         
         return true
     }
-    
-    public func subscribe<S: StoreSubscriber
-        where S.StoreSubscriberStateType == State>(subscriber: S) {
-        self.subscribe(subscriber, selector: nil)
-        
-    }
-    public func subscribe<SelectedState, S: StoreSubscriber
-        where S.StoreSubscriberStateType == SelectedState>
-        (subscriber: S, selector: ((State) -> SelectedState)?) {
-        
-        dispatch_barrier_async(self.concurrencyQueue) {
-            let state = self._state
-            guard self._isNewSubscriber(subscriber) else { return }
-            let subscription  = Subscription(subscriber: subscriber, selector: selector)
-            self._subscriptions.append(subscription)
-            
-            self.notifySubscribers([subscription], newState: state)
 
-        }
-        
-        
-        
-    }
     
     public func unsubscribe(subscriber: AnyStoreSubscriber) {
-        dispatch_barrier_async(self.concurrencyQueue) {
+        
+        dispatch_async(concurrencyQueue) {
             
             if let index = self._subscriptions.indexOf({ return $0.subscriber === subscriber }) {
                 self._subscriptions.removeAtIndex(index)
             }
         }
     }
+
     
+}
+
+
+extension Store: Dispatching {
+
+    public func dispatch(actionCreator: AnyActionCreator) {
+        let state = self.state
+        actionCreator._createActions(currentState: state){ [weak self] action in
+            self?.dispatch(action)
+        }
+    }
     
-    public func dispatch(action: Action, completion:(() -> Void)? = nil){
+    public func dispatch(action: Action){
         
-        dispatch_barrier_async(concurrencyQueue) {
+        dispatch_async(concurrencyQueue) {
             
             let state = self._state
             guard let newState = self.reducer._handleAction(action, state: state) as? State else { fatalError("reducer must return \(State.self) type") }
             self._state = newState
             let subscribers = self._subscriptions
-            self.notifySubscribers(subscribers, newState: newState, completion: completion)
+            self.notifySubscribers(subscribers, oldState: state, newState: newState)
             
         }
         
-        
     }
-    
+
 }
 
-public protocol Dispatching {
-    func dispatch(action: Action, completion: (() -> Void)?)
-}

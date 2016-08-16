@@ -50,13 +50,17 @@ class StoreSubscriberTests: XCTestCase {
 
 struct IntState: StateType {
     let receivedValue: Int?
+    
 }
+
+
 
 class TestFilteredSubscriber: StoreSubscriber {
     var receivedValue: IntState?
 
     func newState(state: IntState) {
-        receivedValue = state    }
+        receivedValue = state
+    }
 
 }
 
@@ -88,6 +92,8 @@ struct OtherState {
 }
 
 struct TestComplexAppStateReducer: Reducer {
+    
+    typealias ReducerStateType = TestComplexAppState
     func handleAction(action: Action, state: TestComplexAppState) -> TestComplexAppState {
         var state = state ?? TestComplexAppState()
 
@@ -103,6 +109,12 @@ struct TestComplexAppStateReducer: Reducer {
 
         return state
     }
+
+    func initialState() -> ReducerStateType {
+        return TestComplexAppState()
+    }
+    
+    
 }
 
 struct SetOtherStateAction: Action {
