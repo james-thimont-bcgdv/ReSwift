@@ -8,8 +8,6 @@
 
 import Foundation
 
-public protocol ActionParametersType {}
-
 public protocol ActionCreatorType: AnyActionCreator {
     
     associatedtype State: StateType
@@ -31,7 +29,7 @@ public protocol AnyActionCreator {
 }
 
 extension ActionCreatorType {
-    public func _createActions(parameters: ActionParametersType, currentState state: StateType, actionBlock:(Action -> Void)) {
+    public func _createActions(currentState state: StateType, actionBlock:(Action -> Void)) {
         guard let st = state as? Self.State else { fatalError() }
         createActions(currentState: st, actionBlock: actionBlock)
     }
