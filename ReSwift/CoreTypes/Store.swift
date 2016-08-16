@@ -18,7 +18,7 @@ import Foundation
 
 
 
-final public class Store<State: StateType>: StoreType, Dispatching {
+final public class Store<State: StateType>: StoreType {
     
     typealias SubscriptionType = Subscription<State>
     
@@ -114,26 +114,6 @@ final public class Store<State: StateType>: StoreType, Dispatching {
         }
     }
     
-    public func dispatch(actionCreator: AnyActionCreator) {
-        let state = self.state
-        actionCreator._createActions(currentState: state){ [weak self] action in
-            self?.dispatch(action)
-        }
-    }
-    
-    public func dispatch(action: Action){
-        
-        dispatch_async(concurrencyQueue) {
-        
-            let state = self._state
-            guard let newState = self.reducer._handleAction(action, state: state) as? State else { fatalError("reducer must return \(State.self) type") }
-            self._state = newState
-            let subscribers = self._subscriptions
-            self.notifySubscribers(subscribers, newState: newState)
-            
-        }
-        
-    }
     
     
     private func dispatch_sync_on_main(block: dispatch_block_t) {
@@ -146,5 +126,30 @@ final public class Store<State: StateType>: StoreType, Dispatching {
         
     }
     
+}
+
+extension Store: Dispatching {
+
+    public func dispatch(actionCreator: AnyActionCreator) {
+        let state = self.state
+        actionCreator._createActions(currentState: state){ [weak self] action in
+            self?.dispatch(action)
+        }
+    }
+    
+    public func dispatch(action: Action){
+        
+        dispatch_async(concurrencyQueue) {
+            
+            let state = self._state
+            guard let newState = self.reducer._handleAction(action, state: state) as? State else { fatalError("reducer must return \(State.self) type") }
+            self._state = newState
+            let subscribers = self._subscriptions
+            self.notifySubscribers(subscribers, newState: newState)
+            
+        }
+        
+    }
+
 }
 
