@@ -10,15 +10,14 @@ import Foundation
 
 public protocol ActionParametersType {}
 
-public protocol ActionCreator {
+public protocol ActionCreatorType: AnyActionCreator {
     
     associatedtype State: StateType
-    associatedtype Parameters: ActionParametersType
     /**
      Generates one or more new actions from the current state.  May be implemented asynchronously or synchronously
      - parameter actionBlock This may be called more than once with different actions
      */
-    func createActions(parameters: Parameters, currentState state: State, actionBlock:(Action -> Void))
+    func createActions(currentState state: State, actionBlock:(Action -> Void))
     
     /**
      Prevents any further `actionBlocks` being executed.  Cancels the operation.
@@ -27,4 +26,14 @@ public protocol ActionCreator {
     
 }
 
+public protocol AnyActionCreator {
+    func _createActions(currentState state: StateType, actionBlock:(Action -> Void))
+}
+
+extension ActionCreatorType {
+    public func _createActions(parameters: ActionParametersType, currentState state: StateType, actionBlock:(Action -> Void)) {
+        guard let st = state as? Self.State else { fatalError() }
+        createActions(currentState: st, actionBlock: actionBlock)
+    }
+}
 

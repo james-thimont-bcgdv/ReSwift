@@ -20,7 +20,7 @@ class StoreDispatchTests: XCTestCase {
     override func setUp() {
         super.setUp()
         reducer = TestReducer()
-        store = Store<TestAppState>(reducer: reducer, initialState: TestAppState())
+        store = Store<TestAppState>(reducer: reducer)
     }
 
 

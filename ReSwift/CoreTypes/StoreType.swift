@@ -18,7 +18,7 @@ public protocol StoreType {
 
     associatedtype State: StateType
 
-    init(reducer: AnyReducer, initialState: State)
+    init(reducer: AnyReducer)
     
     /// The current state stored in the store.
     var state: State { get }
@@ -62,9 +62,9 @@ public protocol StoreType {
      return type, e.g. to return promises
      */
     #if swift(>=3)
-    func dispatch(_ action: Action, completion:() -> Void)
+    func dispatch(_ action: Action)
     #else
-    func dispatch(action: Action, completion:(() -> Void)?)
+    func dispatch(action: Action)
     #endif
 
  

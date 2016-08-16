@@ -32,7 +32,12 @@ class StoreSubscriptionTests: XCTestCase {
         store = Store(reducer: reducer, initialState: TestAppState())
         var subscriber: TestSubscriber? = TestSubscriber()
 
+        let exp = expectationWithDescription("")
         store.subscribe(subscriber!)
+        dispatch_async(dispatch_get_main_queue()) { 
+            exp.fulfill()
+        }
+        waitForFutureExpectations(withTimeout: 1)
         XCTAssertEqual(store.subscriptions.flatMap({ $0.subscriber }).count, 1)
 
         subscriber = nil
@@ -50,28 +55,16 @@ class StoreSubscriptionTests: XCTestCase {
         let subscriber = TestSubscriber()
 
         store.subscribe(subscriber)
-        store.dispatch(SetValueAction(3), completion: { 
-           expectation.fulfill()
-        })
+        store.dispatch(SetValueAction(3))
+        
+        dispatch_async(dispatch_get_main_queue()) {
+            XCTAssertEqual(subscriber.receivedStates.last?.testValue, 3)
+            expectation.fulfill()
+        }
         
         waitForExpectationsWithTimeout(1, handler: nil)
-        XCTAssertEqual(subscriber.receivedStates.last?.testValue, 3)
+        
     }
-
-    /**
-     it allows dispatching from within an observer
-     */
-//    func testAllowDispatchWithinObserver() {
-//        store = Store(reducer: reducer, initialState: TestAppState())
-//        let subscriber = DispatchingSubscriber(store: store)
-//
-//        store.subscribe(subscriber)
-//        store.dispatch(SetValueAction(2))
-//
-//        waitFor(0.2)
-//        
-//        XCTAssertEqual(store.state.testValue, 5)
-//    }
 
     /**
      it does not dispatch value after subscriber unsubscribes
@@ -92,18 +85,26 @@ class StoreSubscriptionTests: XCTestCase {
         store.subscribe(subscriber)
 
         let expectation = expectationWithDescription("")
-        store.dispatch(SetValueAction(20), completion: {
+        store.dispatch(SetValueAction(20))
+        
+        dispatch_async(dispatch_get_main_queue()) { 
+            
+            XCTAssertEqual(subscriber.receivedStates.count, 5)
+            guard subscriber.receivedStates.count == 5 else {
+                expectation.fulfill()
+                return
+            }
+            XCTAssertNil(subscriber.receivedStates[subscriber.receivedStates.count - 5].testValue)
+            XCTAssertEqual(subscriber.receivedStates[subscriber.receivedStates.count - 4].testValue, 5)
+            XCTAssertEqual(subscriber.receivedStates[subscriber.receivedStates.count - 3].testValue, 10)
+            XCTAssertEqual(subscriber.receivedStates[subscriber.receivedStates.count - 2].testValue, 25)
+            XCTAssertEqual(subscriber.receivedStates[subscriber.receivedStates.count - 1].testValue, 20)
             expectation.fulfill()
-        })
+            
+        }
+        
         waitForExpectationsWithTimeout(1, handler: nil)
         
-        XCTAssertEqual(subscriber.receivedStates.count, 5)
-        guard subscriber.receivedStates.count == 5 else { return }
-        XCTAssertNil(subscriber.receivedStates[subscriber.receivedStates.count - 5].testValue)
-        XCTAssertEqual(subscriber.receivedStates[subscriber.receivedStates.count - 4].testValue, 5)
-        XCTAssertEqual(subscriber.receivedStates[subscriber.receivedStates.count - 3].testValue, 10)
-        XCTAssertEqual(subscriber.receivedStates[subscriber.receivedStates.count - 2].testValue, 25)
-        XCTAssertEqual(subscriber.receivedStates[subscriber.receivedStates.count - 1].testValue, 20)
     }
 
     /**
@@ -116,7 +117,13 @@ class StoreSubscriptionTests: XCTestCase {
         store.subscribe(subscriber)
         store.subscribe(subscriber)
 
-        XCTAssertEqual(store.subscriptions.count, 1)
+        let exp = expectationWithDescription("")
+        dispatch_async(dispatch_get_main_queue()) {
+            XCTAssertEqual(self.store.subscriptions.count, 1)
+            exp.fulfill()
+        }
+        waitForFutureExpectations(withTimeout: 1)
+
     }
 
     /**
@@ -129,7 +136,14 @@ class StoreSubscriptionTests: XCTestCase {
         store.subscribe(subscriber) { $0 }
         store.subscribe(subscriber) { $0 }
 
-        XCTAssertEqual(store.subscriptions.count, 1)
+        let exp = expectationWithDescription("")
+        dispatch_async(dispatch_get_main_queue()) {
+            XCTAssertEqual(self.store.subscriptions.count, 1)
+            exp.fulfill()
+        }
+        waitForFutureExpectations(withTimeout: 1)
+
+        
     }
 }
 

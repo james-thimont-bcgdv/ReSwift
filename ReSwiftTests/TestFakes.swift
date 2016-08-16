@@ -81,6 +81,10 @@ public struct TestReducer: Reducer {
                 }
     }
     
+    public func initialState() -> ReducerStateType {
+        return TestAppState()
+    }
+    
 }
 
 
