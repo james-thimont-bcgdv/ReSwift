@@ -18,7 +18,7 @@ public protocol StoreType {
 
     associatedtype State: StateType
 
-    init(reducer: AnyReducer, actionObservers: [ActionObserver])
+    init(reducer: AnyReducer, actionObservers: [AnyActionObserver<State>])
     
     /// The current state stored in the store.
     var state: State { get }

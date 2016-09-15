@@ -8,6 +8,21 @@
 
 import Foundation
 
+public struct AnyActionObserver<S: StateType>: ActionObserver {
+    
+    private let _newAction: (Action, S, S) -> Void
+    
+    public init<O: ActionObserver where O.State == S>(_ base: O) {
+        self._newAction = base.newAction
+    }
+    
+    public func newAction(action: Action, oldState: S, newState: S) {
+        _newAction(action, oldState, newState)
+    }
+    
+}
+
 public protocol ActionObserver {
-    func newAction(action: Action, oldState: StateType, newState: StateType)
+    associatedtype State: StateType
+    func newAction(action: Action, oldState: State, newState: State)
 }

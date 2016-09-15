@@ -62,13 +62,13 @@ final public class Store<State: StateType>: StoreType {
         return s
     }
     
-    private let actionObservers: [ActionObserver]
+    private let actionObservers: [AnyActionObserver<State>]
     
-    public convenience init(reducer: AnyReducer, actionObservers: [ActionObserver] = []) {
+    public convenience init(reducer: AnyReducer, actionObservers: [AnyActionObserver<State>] = []) {
         self.init(reducer: reducer, initialState: reducer._initialState() as! State, actionObservers: actionObservers)
     }
     
-    internal init(reducer: AnyReducer, initialState: State, actionObservers: [ActionObserver] = []) {
+    internal init(reducer: AnyReducer, initialState: State, actionObservers: [AnyActionObserver<State>] = []) {
         
         self._state = initialState
         self.reducer = reducer

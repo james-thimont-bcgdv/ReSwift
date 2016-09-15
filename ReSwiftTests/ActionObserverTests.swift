@@ -21,7 +21,7 @@ class ActionObserverTests: XCTestCase {
         reducer = TestReducer()
         actionObserver = FakeActionObserver()
         
-        store = Store<TestAppState>(reducer: reducer, actionObservers: [actionObserver])
+        store = Store<TestAppState>(reducer: reducer, actionObservers: [AnyActionObserver(actionObserver)])
     }
 
     func testActionObserver() {
@@ -32,10 +32,7 @@ class ActionObserverTests: XCTestCase {
         let exp = expectationWithDescription("")
         actionObserver.callback = { action, oldState, newState in
             
-            guard let action = action as? SetValueAction,
-                oldState = oldState as? TestAppState,
-                newState = newState as? TestAppState
-                where oldState.testValue == nil && newState.testValue == 5 else { return }
+            guard let action = action as? SetValueAction where oldState.testValue == nil && newState.testValue == 5 else { return }
             
             XCTAssertEqual(action.value, 5)
             exp.fulfill()
@@ -47,9 +44,9 @@ class ActionObserverTests: XCTestCase {
     
     class FakeActionObserver: ActionObserver {
         
-        var callback: ((Action, oldState: StateType, newState: StateType) -> Void)?
+        var callback: ((Action, oldState: TestAppState, newState: TestAppState) -> Void)?
         
-        func newAction(action: Action, oldState: StateType, newState: StateType) {
+        func newAction(action: Action, oldState: TestAppState, newState: TestAppState) {
             callback?(action, oldState: oldState, newState: newState)
         }
         
