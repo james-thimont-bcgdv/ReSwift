@@ -62,15 +62,17 @@ final public class Store<State: StateType>: StoreType {
         return s
     }
     
+    private let actionObservers: [ActionObserver]
     
-    public convenience init(reducer: AnyReducer) {
-        self.init(reducer: reducer, initialState: reducer._initialState() as! State)
+    public convenience init(reducer: AnyReducer, actionObservers: [ActionObserver] = []) {
+        self.init(reducer: reducer, initialState: reducer._initialState() as! State, actionObservers: actionObservers)
     }
     
-    internal init(reducer: AnyReducer, initialState: State) {
+    internal init(reducer: AnyReducer, initialState: State, actionObservers: [ActionObserver] = []) {
         
         self._state = initialState
         self.reducer = reducer
+        self.actionObservers = actionObservers
         dispatch_set_target_queue(concurrencyQueue, dispatch_get_main_queue())
     }
     
@@ -154,12 +156,19 @@ extension Store: Dispatching {
     public func dispatch(action: Action){
         
         dispatch_async(concurrencyQueue) {
-            
+        
             let state = self._state
+            
             guard let newState = self.reducer._handleAction(action, state: state) as? State else { fatalError("reducer must return \(State.self) type") }
             self._state = newState
             let subscribers = self._subscriptions
             self.notifySubscribers(subscribers, oldState: state, newState: newState)
+            
+            self.actionObservers.forEach { observer in
+                dispatch_async(dispatch_get_main_queue()) {
+                    observer.newAction(action, oldState: state, newState: newState)
+                }
+            }
             
         }
         
